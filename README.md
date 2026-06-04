@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Faktur — Developer Platform
 
-## Getting Started
+The Faktur developer platform (developer portal). A Next.js application that exposes
+the public developer experience for Faktur: API explorer, API keys, usage/activity
+dashboards, OAuth apps and developer documentation entry points.
 
-First, run the development server:
+> Extracted from the former Faktur monorepo into its own repository. It talks to the
+> Faktur backend over HTTP only — there is no shared source code with the other repos.
+
+## Stack
+
+- **Next.js** (App Router) + **React** + **TypeScript**
+- **Tailwind CSS**
+- ESLint flat config (`eslint.config.mjs`)
+
+## Prerequisites
+
+- Node.js `>= 24`
+- The Faktur **backend** running and reachable (see its repo)
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env   # then fill in the values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app starts on its configured port (see `package.json` / `.env`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All required variables are listed in `.env.example`. Copy it to `.env` and fill it in.
+`.env` is gitignored and must **never** be committed (it holds secrets).
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run start` | Run the production build |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/            Application source (App Router pages, components, lib)
+public/         Static assets
+next.config.ts  Next.js configuration
+```
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Standard Next.js deployment. Provide the production environment variables from
+`.env.example`, run `npm run build`, then `npm run start` (or deploy to your host of
+choice). Point it at the production Faktur backend.
