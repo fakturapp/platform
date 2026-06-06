@@ -28,13 +28,16 @@ export const DASHBOARD_URL = requireEnv(
   process.env.NEXT_PUBLIC_DASHBOARD_URL,
   'NEXT_PUBLIC_DASHBOARD_URL'
 )
+export const ACCOUNT_URL = (
+  optionalEnv(process.env.NEXT_PUBLIC_ACCOUNT_URL) || 'https://account.fakturapp.cc'
+).replace(/\/+$/, '')
 export const DOCS_URL = requireEnv(process.env.NEXT_PUBLIC_DOCS_URL, 'NEXT_PUBLIC_DOCS_URL')
 export const PLATFORM_URL = requireEnv(
   process.env.NEXT_PUBLIC_PLATFORM_URL,
   'NEXT_PUBLIC_PLATFORM_URL'
 )
 
-export const OAUTH_AUTHORIZE_URL = `${DASHBOARD_URL}/oauth/authorize`
+export const OAUTH_AUTHORIZE_URL = `${ACCOUNT_URL}/oauth/authorize`
 export const OAUTH_TOKEN_URL = `${API_BASE_URL}/oauth/token`
 export const OAUTH_REVOKE_URL = `${API_BASE_URL}/oauth/revoke`
 export const OAUTH_EXCHANGE_SESSION_URL = `${API_BASE_URL}/oauth/exchange-session`
