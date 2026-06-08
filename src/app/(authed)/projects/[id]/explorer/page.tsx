@@ -27,6 +27,9 @@ import { useToast } from '@/components/ui/toast'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { apiProjectsClient } from '@/lib/api-projects-client'
 import { API_BASE_URL, API_PREFIX_V1, API_PREFIX_PLATFORM } from '@/lib/oauth-config'
+import { useAuth } from '@/lib/auth'
+import { isProPlan } from '@/lib/plan'
+import { ProGate } from '@/components/billing/pro-gate'
 
 // Strip whichever prefix API_BASE_URL was configured with so we can swap in
 // either v1 or platform freely without double-prefixing.
@@ -241,6 +244,8 @@ type ResponseTab = 'pretty' | 'raw' | 'headers' | 'readable'
 export default function ExplorerPage() {
   const params = useParams<{ id: string }>()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const explorerLocked = !isProPlan(user?.currentTeamPlan)
   const [keys, setKeys] = useState<ApiKeyShape[] | null>(null)
   const [selectedKeyId, setSelectedKeyId] = useState<string>('')
   const [tokenPlaintext, setTokenPlaintext] = useState('')
@@ -436,6 +441,11 @@ export default function ExplorerPage() {
         </p>
       </div>
 
+      <ProGate
+        locked={explorerLocked}
+        title="API Explorer réservé à Pro"
+        description="Passez à Faktur Pro pour tester vos endpoints en direct depuis le navigateur."
+      >
       <div className="grid gap-6 lg:grid-cols-2">
       <Card className="border-border/50">
         <CardContent className="p-5 space-y-4">
@@ -702,6 +712,7 @@ export default function ExplorerPage() {
         </CardContent>
       </Card>
       </div>
+      </ProGate>
     </motion.div>
   )
 }
