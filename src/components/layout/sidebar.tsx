@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { useAuth, type PlatformTeam } from '@/lib/auth'
 import { useTheme } from '@/lib/theme'
 import { useProjects } from '@/lib/projects-context'
+import { planLabel } from '@/lib/plan'
 import { StorageMeter } from '@/components/layout/storage-meter'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { DASHBOARD_URL, DOCS_URL } from '@/lib/oauth-config'
@@ -429,6 +430,9 @@ function UserFooter() {
             <div className="min-w-0 flex-1 text-left">
               <p className="truncate text-[14px] font-medium leading-tight text-foreground">
                 {user.fullName ?? user.email.split('@')[0]}
+              </p>
+              <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                Faktur {planLabel(user.currentTeamPlan)}
               </p>
             </div>
             <button
