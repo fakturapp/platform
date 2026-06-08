@@ -359,56 +359,81 @@ export default function ExplorerPage() {
     setSending(true)
     setResponse(null)
 
-    const reqHeaders: Record<string, string> = {
-      Authorization: `Bearer ${tokenPlaintext.trim()}`,
-    }
-    if (hasBody && body.trim()) reqHeaders['Content-Type'] = 'application/json'
+    const extraHeaders: Record<string, string> = {}
     for (const row of headers) {
-      if (row.key.trim()) reqHeaders[row.key.trim()] = row.value
+      if (row.key.trim()) extraHeaders[row.key.trim()] = row.value
     }
 
-    const t0 = performance.now()
     let logStatus = 0
     let logLatency = 0
     let logSize = 0
     let logError: string | null = null
     try {
-      const res = await fetch(fullUrl, {
-        method,
-        headers: reqHeaders,
-        body: hasBody && body.trim() ? body : undefined,
+      const proxyRes = await fetch('/api/explorer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method,
+          url: fullUrl,
+          token: tokenPlaintext.trim(),
+          headers: extraHeaders,
+          body: hasBody && body.trim() ? body : undefined,
+        }),
       })
-      const latencyMs = Math.round(performance.now() - t0)
-      const text = await res.text()
-      const { pretty, isJson } = fmtBody(text)
-      const responseHeaders: Array<[string, string]> = []
-      res.headers.forEach((v, k) => responseHeaders.push([k, v]))
+      const result = await proxyRes.json()
 
+      if (!proxyRes.ok && result?.error) {
+        setResponse({
+          status: proxyRes.status,
+          statusText: 'Explorer error',
+          latencyMs: 0,
+          headers: [],
+          body: result.error,
+          isJson: false,
+        })
+        setResponseTab('raw')
+        logError = result.error
+        return
+      }
+
+      if (result?.networkError) {
+        setResponse({
+          status: 0,
+          statusText: 'Network error',
+          latencyMs: result.durationMs ?? 0,
+          headers: [],
+          body: result.networkError,
+          isJson: false,
+        })
+        setResponseTab('raw')
+        logLatency = result.durationMs ?? 0
+        logError = result.networkError
+        return
+      }
+
+      const { pretty, isJson } = fmtBody(result.body ?? '')
       setResponse({
-        status: res.status,
-        statusText: res.statusText,
-        latencyMs,
-        headers: responseHeaders,
-        body: pretty || text,
+        status: result.status,
+        statusText: result.statusText ?? '',
+        latencyMs: result.durationMs ?? 0,
+        headers: result.headers ?? [],
+        body: pretty || (result.body ?? ''),
         isJson,
       })
       setResponseTab(isJson ? 'pretty' : 'raw')
-      logStatus = res.status
-      logLatency = latencyMs
-      logSize = new TextEncoder().encode(text).byteLength
+      logStatus = result.status ?? 0
+      logLatency = result.durationMs ?? 0
+      logSize = new TextEncoder().encode(result.body ?? '').byteLength
     } catch (err: any) {
-      const latencyMs = Math.round(performance.now() - t0)
       setResponse({
         status: 0,
-        statusText: 'Network error',
-        latencyMs,
+        statusText: 'Erreur',
+        latencyMs: 0,
         headers: [],
         body: err?.message ?? String(err),
         isJson: false,
       })
       setResponseTab('raw')
-      logStatus = 0
-      logLatency = latencyMs
       logError = err?.message ?? String(err)
     } finally {
       setSending(false)
