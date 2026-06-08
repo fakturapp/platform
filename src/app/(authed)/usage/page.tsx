@@ -7,6 +7,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/components/ui/toast'
 import { creditsClient, type CreditsUsage } from '@/lib/credits-client'
+import { useAuth } from '@/lib/auth'
+import type { PlatformPlan } from '@/lib/auth'
 
 function fmtCompact(iso: string | null): string {
   if (!iso) return 'pas encore commencé'
@@ -35,6 +37,8 @@ function fmtRelative(date: Date): string {
 
 export default function UsagePage() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const plan: PlatformPlan = user?.currentTeamPlan ?? 'free'
   const [usage, setUsage] = useState<CreditsUsage | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -85,6 +89,7 @@ export default function UsagePage() {
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-accent" />
           <h1 className="text-xl font-bold text-foreground">Usage</h1>
+          <PlanBadges plan={plan} />
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
           <a
@@ -152,6 +157,29 @@ export default function UsagePage() {
         </div>
       </div>
     </motion.div>
+  )
+}
+
+const PLAN_ORDER: PlatformPlan[] = ['free', 'pro', 'team']
+const PLAN_LABELS: Record<PlatformPlan, string> = { free: 'Free', pro: 'Pro', team: 'Team' }
+
+function PlanBadges({ plan }: { plan: PlatformPlan }) {
+  return (
+    <div className="ml-1.5 flex items-center gap-1">
+      {PLAN_ORDER.map((p) => {
+        const active = p === plan
+        return (
+          <span
+            key={p}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+              active ? 'bg-accent/15 text-accent' : 'bg-surface text-muted-foreground/40'
+            }`}
+          >
+            {PLAN_LABELS[p]}
+          </span>
+        )
+      })}
+    </div>
   )
 }
 
