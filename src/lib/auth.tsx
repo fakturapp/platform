@@ -41,6 +41,7 @@ export interface PlatformUser {
   subscriptionStatus: string | null
   subscriptionGraceEndsAt: string | null
   subscriptionPaused: boolean
+  apiGraceEndsAt: string | null
 }
 
 interface AuthContextValue {
@@ -71,6 +72,7 @@ interface MeResponse {
       subscriptionStatus?: string | null
       subscriptionGraceEndsAt?: string | null
       subscriptionPaused?: boolean
+      apiGraceEndsAt?: string | null
     }>
   }
 }
@@ -152,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscriptionStatus: meTeam?.subscriptionStatus ?? null,
       subscriptionGraceEndsAt: meTeam?.subscriptionGraceEndsAt ?? null,
       subscriptionPaused: !!meTeam?.subscriptionPaused,
+      apiGraceEndsAt: meTeam?.apiGraceEndsAt ?? null,
     })
     setLoading(false)
   }, [])
