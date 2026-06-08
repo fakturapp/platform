@@ -18,12 +18,15 @@ import {
   setCurrentTeamId as persistCurrentTeamId,
 } from '@/lib/oauth-storage'
 
+export type PlatformPlan = 'free' | 'pro' | 'team'
+
 export interface PlatformTeam {
   id: string
   name: string
   iconUrl: string | null
   role: 'super_admin' | 'admin' | 'member' | 'viewer'
   encryptionMode: 'private' | 'standard'
+  plan: PlatformPlan
 }
 
 export interface PlatformUser {
@@ -33,6 +36,7 @@ export interface PlatformUser {
   avatarUrl: string | null
   currentTeamId: string | null
   currentTeamEncryptionMode: 'private' | 'standard'
+  currentTeamPlan: PlatformPlan
 }
 
 interface AuthContextValue {
@@ -56,6 +60,7 @@ interface MeResponse {
     avatarUrl: string | null
     currentTeamId: string | null
     currentTeamEncryptionMode?: 'private' | 'standard'
+    currentTeamPlan?: PlatformPlan | null
   }
 }
 
@@ -66,6 +71,7 @@ interface TeamsResponse {
     iconUrl: string | null
     role: PlatformTeam['role']
     encryptionMode: 'private' | 'standard'
+    plan?: PlatformPlan | null
   }>
 }
 
@@ -99,7 +105,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const teamsRes = await api.get<TeamsResponse>('/team/all')
-    const teamsList = teamsRes.data?.teams ?? []
+    const teamsList: PlatformTeam[] = (teamsRes.data?.teams ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      iconUrl: t.iconUrl,
+      role: t.role,
+      encryptionMode: t.encryptionMode,
+      plan: t.plan ?? 'free',
+    }))
     setTeams(teamsList)
 
     const persistedTeamId = getCurrentTeamId()
@@ -122,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activeTeam?.encryptionMode ??
         meRes.data.user.currentTeamEncryptionMode ??
         'standard',
+      currentTeamPlan: activeTeam?.plan ?? meRes.data.user.currentTeamPlan ?? 'free',
     })
     setLoading(false)
   }, [])
