@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { useAuth, type PlatformTeam } from '@/lib/auth'
 import { useTheme } from '@/lib/theme'
 import { useProjects } from '@/lib/projects-context'
+import { StorageMeter } from '@/components/layout/storage-meter'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { DASHBOARD_URL, DOCS_URL } from '@/lib/oauth-config'
 import { Avatar } from '@/components/ui/avatar'
@@ -97,6 +98,8 @@ export function Sidebar() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <div className="mx-3 h-px bg-border" />
+      <StorageMeter />
       <UserFooter />
     </Shell>
   )
