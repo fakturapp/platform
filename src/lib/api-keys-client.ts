@@ -13,9 +13,10 @@ export interface ApiKeyShape {
   last_used_at: string | null
   last_ip: string | null
   usage_count: number
-  status: 'active' | 'expired' | 'revoked' | 'rotating'
+  status: 'active' | 'expired' | 'revoked' | 'rotating' | 'suspended'
   revoked_at: string | null
   revoked_reason: string | null
+  suspended_at?: string | null
   rotation_grace_until: string | null
   created_at: string
   updated_at: string | null

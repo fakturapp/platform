@@ -39,6 +39,8 @@ function statusInfo(status: ApiKeyShape['status']) {
       return { label: 'Expirée', variant: 'muted' as const }
     case 'revoked':
       return { label: 'Révoquée', variant: 'destructive' as const }
+    case 'suspended':
+      return { label: 'Suspendue', variant: 'warning' as const }
   }
 }
 
