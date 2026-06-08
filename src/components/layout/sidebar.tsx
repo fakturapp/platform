@@ -11,6 +11,7 @@ import {
   Book,
   Check,
   ChevronDown,
+  Crown,
   ExternalLink,
   FileText,
   Folder,
@@ -475,6 +476,15 @@ function UserFooter() {
             Mon compte
           </DropdownItem>
         </a>
+
+        {user.currentTeamPlan !== 'team' && (
+          <a href={`${DASHBOARD_URL}/dashboard/settings/plan`} target="_blank" rel="noreferrer">
+            <DropdownItem>
+              <Crown className="h-4 w-4 text-amber-500" />
+              Mettre à niveau
+            </DropdownItem>
+          </a>
+        )}
 
         <DropdownSeparator />
 
