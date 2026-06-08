@@ -7,6 +7,7 @@ export interface ApiProjectShape {
   color: string | null
   is_default: boolean
   is_archived: boolean
+  is_suspended?: boolean
   keys_count?: number
   created_at: string
   updated_at: string | null

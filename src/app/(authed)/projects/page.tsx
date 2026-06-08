@@ -10,6 +10,7 @@ import {
   Edit3,
   Folder,
   Key,
+  Lock,
   Plus,
   Star,
   StarOff,
@@ -31,6 +32,9 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { apiProjectsClient, type ApiProjectShape } from '@/lib/api-projects-client'
 import { useProjects } from '@/lib/projects-context'
+import { DASHBOARD_URL } from '@/lib/oauth-config'
+
+const PLAN_URL = `${DASHBOARD_URL}/dashboard/settings/plan`
 
 interface ContextMenuState {
   project: ApiProjectShape
@@ -64,6 +68,7 @@ export default function ProjectsPage() {
   const [menu, setMenu] = useState<ContextMenuState | null>(null)
   const [renameTarget, setRenameTarget] = useState<ApiProjectShape | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [suspendedProject, setSuspendedProject] = useState<ApiProjectShape | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -202,6 +207,7 @@ export default function ProjectsPage() {
                   key={p.id}
                   project={p}
                   onContextMenu={(e) => openContextMenu(e, p)}
+                  onSuspendedClick={() => setSuspendedProject(p)}
                 />
               ))
             )}
@@ -222,6 +228,7 @@ export default function ProjectsPage() {
                     key={p.id}
                     project={p}
                     onContextMenu={(e) => openContextMenu(e, p)}
+                    onSuspendedClick={() => setSuspendedProject(p)}
                     archived
                   />
                 ))}
@@ -352,6 +359,31 @@ export default function ProjectsPage() {
           </Button>
         </DialogFooter>
       </Dialog>
+
+      <Dialog open={suspendedProject !== null} onClose={() => setSuspendedProject(null)}>
+        <DialogHeader
+          onClose={() => setSuspendedProject(null)}
+          icon={<Lock className="h-5 w-5 text-amber-500" />}
+        >
+          <DialogTitle>Projet suspendu</DialogTitle>
+          <DialogDescription>
+            Le projet « {suspendedProject?.name} » est suspendu car votre forfait a été
+            rétrogradé.
+          </DialogDescription>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Reprenez un abonnement pour réactiver ce projet et ses clés API. Vos données ne sont
+          pas supprimées, elles redeviennent accessibles dès la réactivation.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setSuspendedProject(null)}>
+            Fermer
+          </Button>
+          <a href={PLAN_URL} target="_blank" rel="noreferrer">
+            <Button>Mettre à niveau</Button>
+          </a>
+        </DialogFooter>
+      </Dialog>
     </motion.div>
   )
 }
@@ -359,24 +391,26 @@ export default function ProjectsPage() {
 function ProjectRow({
   project,
   onContextMenu,
+  onSuspendedClick,
   archived,
 }: {
   project: ApiProjectShape
   onContextMenu: (e: React.MouseEvent) => void
+  onSuspendedClick: () => void
   archived?: boolean
 }) {
-  return (
-    <Link
-      href={`/projects/${project.id}`}
-      onContextMenu={onContextMenu}
-      className={
-        'grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-5 py-3 transition-colors hover:bg-surface-hover ' +
-        (archived ? 'opacity-60' : '')
-      }
-    >
+  const suspended = !!project.is_suspended
+
+  const inner = (
+    <>
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
-          <Folder className="h-4 w-4" />
+        <div
+          className={
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-md ' +
+            (suspended ? 'bg-muted text-muted-foreground' : 'bg-accent-soft text-accent')
+          }
+        >
+          {suspended ? <Lock className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -386,11 +420,14 @@ function ProjectRow({
                 Défaut
               </Badge>
             )}
+            {suspended && (
+              <Badge variant="warning" size="sm">
+                Suspendu
+              </Badge>
+            )}
           </div>
           {project.description && (
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {project.description}
-            </p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{project.description}</p>
           )}
         </div>
       </div>
@@ -404,6 +441,24 @@ function ProjectRow({
       <div className="hidden text-xs text-muted-foreground md:block w-24 text-right">
         {new Date(project.created_at).toLocaleDateString()}
       </div>
+    </>
+  )
+
+  const rowClass =
+    'grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-surface-hover ' +
+    (archived || suspended ? 'opacity-60' : '')
+
+  if (suspended) {
+    return (
+      <button type="button" onClick={onSuspendedClick} onContextMenu={onContextMenu} className={rowClass}>
+        {inner}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={`/projects/${project.id}`} onContextMenu={onContextMenu} className={rowClass}>
+      {inner}
     </Link>
   )
 }
