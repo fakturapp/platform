@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/toast'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog'
 import { RevealedKeyDialog } from '@/components/api-keys/revealed-key-dialog'
+import { useAuth } from '@/lib/auth'
+import { apiKeyLimit } from '@/lib/plan'
 
 function formatRelative(iso: string | null): string {
   if (!iso) return 'jamais utilisée'
@@ -48,11 +50,17 @@ export default function ProjectApiKeysPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [keys, setKeys] = useState<ApiKeyShape[] | null>(null)
+  const [teamKeyCount, setTeamKeyCount] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [revealed, setRevealed] = useState<{ key: ApiKeyShape; plaintext: string } | null>(
     null
   )
+
+  const keyLimit = apiKeyLimit(user?.currentTeamPlan)
+  const atKeyLimit = teamKeyCount >= keyLimit
+  const keyLimitHint = `Limite de ${keyLimit} clé${keyLimit > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
 
   async function load() {
     const res = await apiKeysClient.list()
@@ -61,7 +69,9 @@ export default function ProjectApiKeysPage() {
       setKeys([])
       return
     }
-    setKeys((res.data?.data ?? []).filter((k) => k.project_id === params.id))
+    const all = res.data?.data ?? []
+    setKeys(all.filter((k) => k.project_id === params.id))
+    setTeamKeyCount(all.filter((k) => k.status !== 'revoked').length)
   }
 
   useEffect(() => {
@@ -84,10 +94,19 @@ export default function ProjectApiKeysPage() {
             Toutes les clés rattachées à ce projet.
           </p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle clé
-        </Button>
+        {atKeyLimit ? (
+          <span title={keyLimitHint} className="inline-flex">
+            <Button size="sm" disabled>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle clé
+            </Button>
+          </span>
+        ) : (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle clé
+          </Button>
+        )}
       </div>
 
       <Card className="border-border/50">
@@ -103,10 +122,19 @@ export default function ProjectApiKeysPage() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Créez votre première clé pour commencer.
               </p>
-              <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Créer une clé
-              </Button>
+              {atKeyLimit ? (
+                <span title={keyLimitHint} className="mt-4 inline-flex">
+                  <Button size="sm" disabled>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer une clé
+                  </Button>
+                </span>
+              ) : (
+                <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer une clé
+                </Button>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-border/50">

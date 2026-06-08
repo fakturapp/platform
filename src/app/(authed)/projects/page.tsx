@@ -32,6 +32,8 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { apiProjectsClient, type ApiProjectShape } from '@/lib/api-projects-client'
 import { useProjects } from '@/lib/projects-context'
+import { useAuth } from '@/lib/auth'
+import { projectLimit } from '@/lib/plan'
 import { DASHBOARD_URL } from '@/lib/oauth-config'
 
 const PLAN_URL = `${DASHBOARD_URL}/dashboard/settings/plan`
@@ -59,6 +61,7 @@ function formatRelative(iso: string | null): string {
 export default function ProjectsPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const { projects, loading, reload } = useProjects()
   const [createOpen, setCreateOpen] = useState(false)
   const [name, setName] = useState('')
@@ -160,6 +163,9 @@ export default function ProjectsPage() {
 
   const active = projects?.filter((p) => !p.is_archived) ?? []
   const archived = projects?.filter((p) => p.is_archived) ?? []
+  const projectMax = projectLimit(user?.currentTeamPlan)
+  const atProjectLimit = active.length >= projectMax
+  const projectLimitHint = `Limite de ${projectMax} projet${projectMax > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
 
   return (
     <motion.div
@@ -177,10 +183,19 @@ export default function ProjectsPage() {
             Regroupez vos clés API par projet. Clic droit sur une ligne pour plus d&apos;options.
           </p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau projet
-        </Button>
+        {atProjectLimit ? (
+          <span title={projectLimitHint} className="inline-flex">
+            <Button size="sm" disabled>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau projet
+            </Button>
+          </span>
+        ) : (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau projet
+          </Button>
+        )}
       </div>
 
       <Card className="border-border/50">
