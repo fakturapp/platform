@@ -7,6 +7,7 @@ import { Agentation } from "agentation";
 import { ProjectsProvider } from '@/lib/projects-context'
 import { Sidebar } from '@/components/layout/sidebar'
 import { DashboardGradient } from '@/components/layout/dashboard-gradient'
+import { BillingBanners } from '@/components/billing/billing-banners'
 import { Spinner } from '@/components/ui/spinner'
 
 export default function AuthedLayout({ children }: { children: ReactNode }) {
@@ -33,6 +34,7 @@ export default function AuthedLayout({ children }: { children: ReactNode }) {
         <DashboardGradient />
         <Sidebar />
         <div className="relative z-10 flex h-screen flex-col overflow-hidden pl-(--sidebar-width)">
+          <BillingBanners />
           <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>

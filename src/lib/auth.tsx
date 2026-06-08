@@ -35,8 +35,12 @@ export interface PlatformUser {
   fullName: string | null
   avatarUrl: string | null
   currentTeamId: string | null
+  currentTeamName: string | null
   currentTeamEncryptionMode: 'private' | 'standard'
   currentTeamPlan: PlatformPlan
+  subscriptionStatus: string | null
+  subscriptionGraceEndsAt: string | null
+  subscriptionPaused: boolean
 }
 
 interface AuthContextValue {
@@ -59,8 +63,15 @@ interface MeResponse {
     fullName: string | null
     avatarUrl: string | null
     currentTeamId: string | null
+    currentTeamName?: string | null
     currentTeamEncryptionMode?: 'private' | 'standard'
     currentTeamPlan?: PlatformPlan | null
+    teams?: Array<{
+      id: string
+      subscriptionStatus?: string | null
+      subscriptionGraceEndsAt?: string | null
+      subscriptionPaused?: boolean
+    }>
   }
 }
 
@@ -124,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (effectiveTeamId) persistCurrentTeamId(effectiveTeamId)
     const activeTeam = teamsList.find((t) => t.id === effectiveTeamId) ?? null
+    const meTeam = meRes.data.user.teams?.find((t) => t.id === effectiveTeamId) ?? null
 
     setUser({
       id: meRes.data.user.id,
@@ -131,11 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fullName: meRes.data.user.fullName,
       avatarUrl: meRes.data.user.avatarUrl,
       currentTeamId: effectiveTeamId,
+      currentTeamName: activeTeam?.name ?? meRes.data.user.currentTeamName ?? null,
       currentTeamEncryptionMode:
         activeTeam?.encryptionMode ??
         meRes.data.user.currentTeamEncryptionMode ??
         'standard',
       currentTeamPlan: activeTeam?.plan ?? meRes.data.user.currentTeamPlan ?? 'free',
+      subscriptionStatus: meTeam?.subscriptionStatus ?? null,
+      subscriptionGraceEndsAt: meTeam?.subscriptionGraceEndsAt ?? null,
+      subscriptionPaused: !!meTeam?.subscriptionPaused,
     })
     setLoading(false)
   }, [])
