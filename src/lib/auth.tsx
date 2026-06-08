@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchMe = useCallback(async () => {
+  const fetchMe = useCallback(async (silent = false) => {
     const token = getStoredAccessToken()
     if (!token) {
       setUser(null)
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
 
     const meRes = await api.get<MeResponse>('/auth/me')
@@ -159,11 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function ping() {
       if (!getStoredAccessToken()) return
-      const res = await api.get('/auth/me')
-      if (res.errorCode === 'invalid_token' || res.errorCode === 'token_revoked') {
-        setUser(null)
-        setTeams([])
-      }
+      await fetchMe(true)
     }
 
     const interval = window.setInterval(ping, HEARTBEAT_MS)
@@ -181,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('focus', ping)
     }
-  }, [user])
+  }, [user, fetchMe])
 
   const selectTeam = useCallback(
     async (teamId: string) => {
