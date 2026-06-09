@@ -6,10 +6,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { api, onUnauthorized } from '@/lib/api'
+import { billingClient } from '@/lib/billing-client'
 import { OAUTH_REVOKE_URL } from '@/lib/oauth-config'
 import {
   clearTokens,
@@ -93,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [teams, setTeams] = useState<PlatformTeam[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const lastBillingSyncRef = useRef(0)
 
   const fetchMe = useCallback(async (silent = false) => {
     const token = getStoredAccessToken()
@@ -195,6 +198,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('focus', ping)
+    }
+  }, [user, fetchMe])
+
+  useEffect(() => {
+    if (!user) return
+
+    const THROTTLE_MS = 90_000
+    let cancelled = false
+
+    async function syncBilling() {
+      if (!getStoredAccessToken()) return
+      const elapsed = Date.now() - lastBillingSyncRef.current
+      if (elapsed < THROTTLE_MS) return
+      lastBillingSyncRef.current = Date.now()
+      const res = await billingClient.sync()
+      if (!cancelled && res.data?.synced) {
+        await fetchMe(true)
+      }
+    }
+
+    syncBilling()
+
+    function onFocus() {
+      syncBilling()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
     }
   }, [user, fetchMe])
 
