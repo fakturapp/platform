@@ -61,6 +61,8 @@ export default function ProjectApiKeysPage() {
   const keyLimit = apiKeyLimit(user?.currentTeamPlan)
   const atKeyLimit = teamKeyCount >= keyLimit
   const keyLimitHint = `Limite de ${keyLimit} clé${keyLimit > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
+  const graceActive = !!user?.apiGraceEndsAt
+  const overKeys = Math.max(0, teamKeyCount - keyLimit)
 
   async function load() {
     const res = await apiKeysClient.list()
@@ -108,6 +110,15 @@ export default function ProjectApiKeysPage() {
           </Button>
         )}
       </div>
+
+      {graceActive && overKeys > 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+          Votre forfait ne couvre que {keyLimit} clé{keyLimit > 1 ? 's' : ''} API.{' '}
+          {overKeys} clé{overKeys > 1 ? 's' : ''} en trop{' '}
+          {overKeys > 1 ? 'seront suspendues' : 'sera suspendue'} à la fin du délai de grâce.
+          Reprenez un abonnement pour {overKeys > 1 ? 'les' : 'la'} conserver.
+        </div>
+      )}
 
       <Card className="border-border/50">
         <CardContent className="p-0">

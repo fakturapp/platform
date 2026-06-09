@@ -166,6 +166,8 @@ export default function ProjectsPage() {
   const projectMax = projectLimit(user?.currentTeamPlan)
   const atProjectLimit = active.length >= projectMax
   const projectLimitHint = `Limite de ${projectMax} projet${projectMax > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
+  const graceActive = !!user?.apiGraceEndsAt
+  const overProjects = Math.max(0, active.length - projectMax)
 
   return (
     <motion.div
@@ -197,6 +199,15 @@ export default function ProjectsPage() {
           </Button>
         )}
       </div>
+
+      {graceActive && overProjects > 0 && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+          Votre forfait ne couvre que {projectMax} projet{projectMax > 1 ? 's' : ''}.{' '}
+          {overProjects} projet{overProjects > 1 ? 's' : ''} en trop{' '}
+          {overProjects > 1 ? 'seront suspendus' : 'sera suspendu'} à la fin du délai de grâce.
+          Reprenez un abonnement pour {overProjects > 1 ? 'les' : 'le'} conserver.
+        </div>
+      )}
 
       <Card className="border-border/50">
         <CardContent className="p-0">
