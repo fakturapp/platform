@@ -28,7 +28,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { apiProjectsClient, type AuditLogShape } from '@/lib/api-projects-client'
 
@@ -219,8 +219,28 @@ export default function ActivityPage() {
       </div>
 
       {logs === null ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
+        <div className="space-y-6">
+          {[0, 1].map((group) => (
+            <div key={group}>
+              <Skeleton className="mb-2 ml-1 h-3 w-28 rounded-md" />
+              <Card className="border-border/50">
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border/50">
+                    {Array.from({ length: group === 0 ? 4 : 2 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3">
+                        <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <Skeleton className="h-4 w-40 rounded-md" />
+                          <Skeleton className="h-3 w-56 rounded-md" />
+                        </div>
+                        <Skeleton className="h-4 w-4 shrink-0 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <Card className="border-border/50">
