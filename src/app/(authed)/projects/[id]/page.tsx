@@ -21,6 +21,8 @@ import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { apiProjectsClient, type ApiProjectShape } from '@/lib/api-projects-client'
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog'
 import { RevealedKeyDialog } from '@/components/api-keys/revealed-key-dialog'
+import { useAuth } from '@/lib/auth'
+import { apiKeyLimit } from '@/lib/plan'
 
 function formatRelative(iso: string | null): string {
   if (!iso) return 'jamais utilisée'
@@ -41,12 +43,18 @@ export default function ProjectOverviewPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [project, setProject] = useState<ApiProjectShape | null>(null)
   const [keys, setKeys] = useState<ApiKeyShape[] | null>(null)
+  const [teamKeyCount, setTeamKeyCount] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
   const [revealed, setRevealed] = useState<{ key: ApiKeyShape; plaintext: string } | null>(
     null
   )
+
+  const keyLimit = apiKeyLimit(user?.currentTeamPlan)
+  const atKeyLimit = teamKeyCount >= keyLimit
+  const keyLimitHint = `Limite de ${keyLimit} clé${keyLimit > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
 
   async function loadProject() {
     const res = await apiProjectsClient.show(params.id)
@@ -64,7 +72,9 @@ export default function ProjectOverviewPage() {
       setKeys([])
       return
     }
-    setKeys((res.data?.data ?? []).filter((k) => k.project_id === params.id))
+    const all = res.data?.data ?? []
+    setKeys(all.filter((k) => k.project_id === params.id))
+    setTeamKeyCount(all.filter((k) => k.status !== 'revoked').length)
   }
 
   useEffect(() => {
@@ -123,10 +133,19 @@ export default function ProjectOverviewPage() {
               Paramètres
             </Button>
           </Link>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle clé
-          </Button>
+          {atKeyLimit ? (
+            <span title={keyLimitHint} className="inline-flex">
+              <Button size="sm" disabled>
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle clé
+              </Button>
+            </span>
+          ) : (
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle clé
+            </Button>
+          )}
         </div>
       </div>
 
@@ -205,10 +224,19 @@ export default function ProjectOverviewPage() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Les clés apparaîtront ici dès le premier appel.
                 </p>
-                <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Créer une clé
-                </Button>
+                {atKeyLimit ? (
+                  <span title={keyLimitHint} className="mt-4 inline-flex">
+                    <Button size="sm" disabled>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer une clé
+                    </Button>
+                  </span>
+                ) : (
+                  <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer une clé
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-border/50">
