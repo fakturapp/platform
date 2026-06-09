@@ -154,13 +154,47 @@ export default function ApiKeySettingsPage() {
 
   if (!apiKey) {
     return (
-      <Card className="border-border/50">
-        <CardContent className="p-8">
-          <div className="flex justify-center">
-            <Spinner />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded-md" />
+          <Skeleton className="h-6 w-48 rounded-md" />
+        </div>
+
+        <Card className="border-border/50">
+          <CardContent className="p-5 space-y-5">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-28 rounded-md" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-32 rounded-md" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardContent className="p-5 space-y-3">
+            <Skeleton className="h-4 w-36 rounded-md" />
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex items-start justify-between gap-4 rounded-lg border border-border/30 bg-card p-3"
+              >
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-40 rounded-md" />
+                  <Skeleton className="h-3 w-64 rounded-md" />
+                </div>
+                <Skeleton className="h-8 w-28 shrink-0 rounded-lg" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 

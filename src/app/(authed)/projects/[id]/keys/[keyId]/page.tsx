@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useApiKey } from '@/lib/api-key-context'
 
 function formatDate(iso: string | null) {
@@ -14,11 +14,63 @@ export default function OverviewPage() {
   const { apiKey, webhook, loading } = useApiKey()
 
   if (!apiKey) {
-    return loading ? (
-      <div className="flex justify-center py-12">
-        <Spinner />
+    if (!loading) return null
+    return (
+      <div className="space-y-6">
+        <div>
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Skeleton className="h-4 w-32 rounded-md" />
+          </div>
+          <Card className="border-border/50">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border/50">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 px-5 py-3"
+                  >
+                    <Skeleton className="h-3 w-24 rounded-md" />
+                    <Skeleton className="h-4 w-40 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Skeleton className="h-4 w-28 rounded-md" />
+          </div>
+          <Card className="border-border/50">
+            <CardContent className="p-5">
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-20 rounded-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Skeleton className="h-4 w-20 rounded-md" />
+          </div>
+          <Card className="border-border/50">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <Skeleton className="h-4 w-56 rounded-md" />
+                  <Skeleton className="h-3 w-32 rounded-md" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    ) : null
+    )
   }
 
   return (
