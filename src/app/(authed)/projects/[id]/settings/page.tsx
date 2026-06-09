@@ -7,6 +7,7 @@ import { Settings, Trash2, AlertTriangle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogHeader,
@@ -84,8 +85,35 @@ export default function ProjectSettingsPage() {
 
   if (!project) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner />
+      <div className="space-y-6 px-4 lg:px-6 pt-16 md:pt-20 pb-12 max-w-3xl mx-auto w-full">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded-md" />
+            <Skeleton className="h-6 w-40 rounded-md" />
+          </div>
+          <Skeleton className="h-4 w-72 rounded-md" />
+        </div>
+
+        <Card className="border-border/50">
+          <CardContent className="p-5 space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16 rounded-md" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 rounded-md" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50">
+          <CardContent className="p-5 space-y-3">
+            <Skeleton className="h-4 w-36 rounded-md" />
+            <Skeleton className="h-4 w-full max-w-md rounded-md" />
+            <Skeleton className="h-8 w-44 rounded-lg" />
+          </CardContent>
+        </Card>
       </div>
     )
   }
