@@ -8,7 +8,7 @@ import { ChevronRight, Key, Lock, Plus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
 import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog'
@@ -123,8 +123,22 @@ export default function ProjectApiKeysPage() {
       <Card className="border-border/50">
         <CardContent className="p-0">
           {keys === null ? (
-            <div className="flex justify-center py-12">
-              <Spinner />
+            <div className="divide-y divide-border/50">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-3 px-5 py-4"
+                >
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <Skeleton className="h-4 w-44 rounded-md" />
+                      <Skeleton className="h-4 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-72 rounded-md" />
+                  </div>
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
+                </div>
+              ))}
             </div>
           ) : keys.length === 0 ? (
             <div className="px-5 py-12 text-center">
