@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Eye,
   EyeOff,
@@ -107,6 +109,37 @@ function statusColor(s: number): string {
   if (s < 400) return 'text-accent'
   if (s < 500) return 'text-warning'
   return 'text-danger'
+}
+
+function statusDot(s: number): string {
+  if (!s) return 'bg-muted-foreground'
+  if (s < 300) return 'bg-success'
+  if (s < 400) return 'bg-accent'
+  if (s < 500) return 'bg-warning'
+  return 'bg-danger'
+}
+
+function methodTone(method: string): string {
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return 'bg-emerald-500/10 text-emerald-500 ring-emerald-500/25'
+    case 'POST':
+      return 'bg-blue-500/10 text-blue-500 ring-blue-500/25'
+    case 'PUT':
+    case 'PATCH':
+      return 'bg-amber-500/10 text-amber-500 ring-amber-500/25'
+    case 'DELETE':
+      return 'bg-red-500/10 text-red-500 ring-red-500/25'
+    default:
+      return 'bg-muted text-muted-foreground ring-border'
+  }
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} o`
+  const kb = n / 1024
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : kb.toFixed(0)} Ko`
+  return `${(kb / 1024).toFixed(1)} Mo`
 }
 
 function fmtBody(text: string): { pretty: string; isJson: boolean } {
@@ -494,7 +527,7 @@ export default function ExplorerPage() {
             ))}
           </div>
 
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-5">
             {reqTab === 'home' && (
               <div className="space-y-5">
                 <div>
@@ -552,23 +585,29 @@ export default function ExplorerPage() {
             )}
 
             {reqTab === 'examples' && (
-              <div className="space-y-2">
-                <p className="px-1 text-xs text-muted-foreground">
+              <div className="space-y-2.5">
+                <p className="px-0.5 text-xs text-muted-foreground">
                   Clique sur « Essayer » pour pré-remplir la requête, puis « Envoyer ».
                 </p>
                 {PRESETS.map((p) => (
                   <div
                     key={p.label}
-                    className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-colors ${
                       appliedExample === p.label
-                        ? 'border-accent/50 bg-accent/5'
-                        : 'border-border/50'
+                        ? 'border-accent/50 bg-accent/[0.06]'
+                        : 'border-border/50 hover:border-border'
                     }`}
                   >
-                    <div className="min-w-0">
+                    <span
+                      className={`shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold ring-1 ${methodTone(p.method)}`}
+                    >
+                      {p.method}
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground">{p.title}</p>
                       <p className="truncate font-mono text-[11px] text-muted-foreground">
-                        {p.label}
+                        {PREFIX_PATHS[p.prefix]}
+                        {p.path}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => applyPreset(p)}>
@@ -787,6 +826,19 @@ function ResponseView({
     () => (response.isJson ? highlightJsonNodes(response.body) : null),
     [response.body, response.isJson]
   )
+  const byteLen = useMemo(
+    () => new TextEncoder().encode(response.body).length,
+    [response.body]
+  )
+
+  const PAGE_SIZE = 14
+  const [page, setPage] = useState(0)
+  useEffect(() => {
+    setPage(0)
+  }, [response.body])
+  const pageCount = Math.max(1, Math.ceil(readable.length / PAGE_SIZE))
+  const safePage = Math.min(page, pageCount - 1)
+  const pageRows = readable.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE)
 
   const tabs: Array<{ id: ResponseTab; label: string; disabled?: boolean }> = [
     { id: 'pretty', label: 'JSON', disabled: !response.isJson },
@@ -801,13 +853,19 @@ function ResponseView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className={`font-mono text-2xl font-bold ${statusColor(response.status)}`}>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className={`inline-flex h-2.5 w-2.5 rounded-full ${statusDot(response.status)}`} />
+        <span
+          className={`font-mono text-2xl font-bold leading-none ${statusColor(response.status)}`}
+        >
           {response.status || '—'}
         </span>
         <span className="text-sm text-muted-foreground">{response.statusText}</span>
         <Badge variant="muted" size="sm">
           {response.latencyMs} ms
+        </Badge>
+        <Badge variant="muted" size="sm">
+          {formatBytes(byteLen)}
         </Badge>
         <Button
           variant="outline"
@@ -877,27 +935,61 @@ function ResponseView({
       )}
 
       {tab === 'readable' && (
-        <div className="max-h-[60vh] overflow-auto rounded-lg border border-border/50 bg-surface">
-          {readable.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-muted-foreground">
-              Activez l’onglet sur une réponse JSON valide.
-            </p>
-          ) : (
-            <div className="divide-y divide-border/40 text-xs">
-              {readable.map((row, i) => (
-                <div
-                  key={`${row.path}-${i}`}
-                  className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-4 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">{row.label}</p>
-                    <code className="block truncate font-mono text-[10px] text-muted-foreground">
-                      {row.path}
-                    </code>
+        <div className="space-y-2">
+          <div className="overflow-hidden rounded-lg border border-border/50 bg-surface">
+            {readable.length === 0 ? (
+              <p className="px-3 py-4 text-xs text-muted-foreground">
+                Activez l’onglet sur une réponse JSON valide.
+              </p>
+            ) : (
+              <div className="divide-y divide-border/40 text-xs">
+                {pageRows.map((row, i) => (
+                  <div
+                    key={`${row.path}-${safePage}-${i}`}
+                    className="grid grid-cols-[1fr_auto] items-baseline gap-3 px-4 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">{row.label}</p>
+                      <code className="block truncate font-mono text-[10px] text-muted-foreground">
+                        {row.path}
+                      </code>
+                    </div>
+                    <div className="text-right font-medium text-foreground">{row.value}</div>
                   </div>
-                  <div className="text-right text-foreground">{row.value}</div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+              <span className="tabular-nums">
+                {safePage * PAGE_SIZE + 1}–{Math.min(readable.length, (safePage + 1) * PAGE_SIZE)}{' '}
+                sur {readable.length}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/50 px-2 py-1 transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Précédent
+                </button>
+                <span className="tabular-nums text-foreground">
+                  {safePage + 1} / {pageCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  disabled={safePage >= pageCount - 1}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/50 px-2 py-1 transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Suivant
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           )}
         </div>
