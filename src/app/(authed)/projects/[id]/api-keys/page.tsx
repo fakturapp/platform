@@ -15,6 +15,7 @@ import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog'
 import { RevealedKeyDialog } from '@/components/api-keys/revealed-key-dialog'
 import { useAuth } from '@/lib/auth'
 import { apiKeyLimit } from '@/lib/plan'
+import { LimitHint } from '@/components/ui/limit-hint'
 
 function formatRelative(iso: string | null): string {
   if (!iso) return 'jamais utilisée'
@@ -52,17 +53,27 @@ export default function ProjectApiKeysPage() {
   const { toast } = useToast()
   const { user } = useAuth()
   const [keys, setKeys] = useState<ApiKeyShape[] | null>(null)
-  const [teamKeyCount, setTeamKeyCount] = useState(0)
+  const [teamKeys, setTeamKeys] = useState<ApiKeyShape[]>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [revealed, setRevealed] = useState<{ key: ApiKeyShape; plaintext: string } | null>(
     null
   )
 
+  const teamKeyCount = teamKeys.filter((k) => k.status !== 'revoked').length
   const keyLimit = apiKeyLimit(user?.currentTeamPlan)
   const atKeyLimit = teamKeyCount >= keyLimit
   const keyLimitHint = `Limite de ${keyLimit} clé${keyLimit > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
   const graceActive = !!user?.apiGraceEndsAt
   const overKeys = Math.max(0, teamKeyCount - keyLimit)
+  const atRiskKeyIds = new Set(
+    graceActive
+      ? [...teamKeys]
+          .filter((k) => k.status !== 'revoked')
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          .slice(keyLimit)
+          .map((k) => k.id)
+      : []
+  )
 
   async function load() {
     const res = await apiKeysClient.list()
@@ -73,7 +84,7 @@ export default function ProjectApiKeysPage() {
     }
     const all = res.data?.data ?? []
     setKeys(all.filter((k) => k.project_id === params.id))
-    setTeamKeyCount(all.filter((k) => k.status !== 'revoked').length)
+    setTeamKeys(all)
   }
 
   useEffect(() => {
@@ -97,12 +108,12 @@ export default function ProjectApiKeysPage() {
           </p>
         </div>
         {atKeyLimit ? (
-          <span title={keyLimitHint} className="inline-flex">
+          <LimitHint text={keyLimitHint}>
             <Button size="sm" disabled>
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle clé
             </Button>
-          </span>
+          </LimitHint>
         ) : (
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -148,12 +159,14 @@ export default function ProjectApiKeysPage() {
                 Créez votre première clé pour commencer.
               </p>
               {atKeyLimit ? (
-                <span title={keyLimitHint} className="mt-4 inline-flex">
-                  <Button size="sm" disabled>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer une clé
-                  </Button>
-                </span>
+                <div className="mt-4 flex justify-center">
+                  <LimitHint text={keyLimitHint}>
+                    <Button size="sm" disabled>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer une clé
+                    </Button>
+                  </LimitHint>
+                </div>
               ) : (
                 <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -166,6 +179,7 @@ export default function ProjectApiKeysPage() {
               <AnimatePresence>
                 {keys.map((k, index) => {
                   const status = statusInfo(k.status)
+                  const warn = atRiskKeyIds.has(k.id)
                   return (
                     <motion.div
                       key={k.id}
@@ -173,7 +187,9 @@ export default function ProjectApiKeysPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className="group flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface-hover transition-colors"
+                      className={`group flex items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-surface-hover ${
+                        warn ? 'bg-amber-500/5 ring-1 ring-inset ring-amber-500/50' : ''
+                      }`}
                     >
                       <Link
                         href={`/projects/${params.id}/keys/${k.id}`}
@@ -186,6 +202,11 @@ export default function ProjectApiKeysPage() {
                           <Badge variant={status.variant} size="sm">
                             {status.label}
                           </Badge>
+                          {warn && (
+                            <Badge variant="warning" size="sm">
+                              Sera suspendue
+                            </Badge>
+                          )}
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <code className="font-mono">{k.masked_token}</code>

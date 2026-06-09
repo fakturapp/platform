@@ -34,6 +34,7 @@ import { apiProjectsClient, type ApiProjectShape } from '@/lib/api-projects-clie
 import { useProjects } from '@/lib/projects-context'
 import { useAuth } from '@/lib/auth'
 import { projectLimit } from '@/lib/plan'
+import { LimitHint } from '@/components/ui/limit-hint'
 import { DASHBOARD_URL } from '@/lib/oauth-config'
 
 const PLAN_URL = `${DASHBOARD_URL}/dashboard/settings/plan`
@@ -168,6 +169,16 @@ export default function ProjectsPage() {
   const projectLimitHint = `Limite de ${projectMax} projet${projectMax > 1 ? 's' : ''} atteinte sur votre plan. Passez à un plan supérieur pour en créer davantage.`
   const graceActive = !!user?.apiGraceEndsAt
   const overProjects = Math.max(0, active.length - projectMax)
+  const orderedActive = graceActive
+    ? [...active].sort((a, b) =>
+        a.is_default === b.is_default
+          ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          : a.is_default
+            ? -1
+            : 1
+      )
+    : []
+  const atRiskProjectIds = new Set(orderedActive.slice(projectMax).map((p) => p.id))
 
   return (
     <motion.div
@@ -186,12 +197,12 @@ export default function ProjectsPage() {
           </p>
         </div>
         {atProjectLimit ? (
-          <span title={projectLimitHint} className="inline-flex">
+          <LimitHint text={projectLimitHint}>
             <Button size="sm" disabled>
               <Plus className="h-4 w-4 mr-2" />
               Nouveau projet
             </Button>
-          </span>
+          </LimitHint>
         ) : (
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -234,6 +245,7 @@ export default function ProjectsPage() {
                   project={p}
                   onContextMenu={(e) => openContextMenu(e, p)}
                   onSuspendedClick={() => setSuspendedProject(p)}
+                  atRisk={atRiskProjectIds.has(p.id)}
                 />
               ))
             )}
@@ -418,14 +430,17 @@ function ProjectRow({
   project,
   onContextMenu,
   onSuspendedClick,
+  atRisk,
   archived,
 }: {
   project: ApiProjectShape
   onContextMenu: (e: React.MouseEvent) => void
   onSuspendedClick: () => void
+  atRisk?: boolean
   archived?: boolean
 }) {
   const suspended = !!project.is_suspended
+  const warn = !!atRisk && !suspended
 
   const inner = (
     <>
@@ -451,6 +466,11 @@ function ProjectRow({
                 Suspendu
               </Badge>
             )}
+            {warn && (
+              <Badge variant="warning" size="sm">
+                Sera suspendu
+              </Badge>
+            )}
           </div>
           {project.description && (
             <p className="mt-0.5 truncate text-xs text-muted-foreground">{project.description}</p>
@@ -472,7 +492,8 @@ function ProjectRow({
 
   const rowClass =
     'grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 px-5 py-3 text-left transition-colors hover:bg-surface-hover ' +
-    (archived || suspended ? 'opacity-60' : '')
+    (archived || suspended ? 'opacity-60 ' : '') +
+    (warn ? 'ring-1 ring-inset ring-amber-500/50 bg-amber-500/5' : '')
 
   if (suspended) {
     return (

@@ -23,6 +23,7 @@ import { CreateApiKeyDialog } from '@/components/api-keys/create-api-key-dialog'
 import { RevealedKeyDialog } from '@/components/api-keys/revealed-key-dialog'
 import { useAuth } from '@/lib/auth'
 import { apiKeyLimit } from '@/lib/plan'
+import { LimitHint } from '@/components/ui/limit-hint'
 
 function formatRelative(iso: string | null): string {
   if (!iso) return 'jamais utilisée'
@@ -134,12 +135,12 @@ export default function ProjectOverviewPage() {
             </Button>
           </Link>
           {atKeyLimit ? (
-            <span title={keyLimitHint} className="inline-flex">
+            <LimitHint text={keyLimitHint}>
               <Button size="sm" disabled>
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle clé
               </Button>
-            </span>
+            </LimitHint>
           ) : (
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -225,12 +226,14 @@ export default function ProjectOverviewPage() {
                   Les clés apparaîtront ici dès le premier appel.
                 </p>
                 {atKeyLimit ? (
-                  <span title={keyLimitHint} className="mt-4 inline-flex">
-                    <Button size="sm" disabled>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Créer une clé
-                    </Button>
-                  </span>
+                  <div className="mt-4 flex justify-center">
+                    <LimitHint text={keyLimitHint}>
+                      <Button size="sm" disabled>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Créer une clé
+                      </Button>
+                    </LimitHint>
+                  </div>
                 ) : (
                   <Button size="sm" className="mt-4" onClick={() => setCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
