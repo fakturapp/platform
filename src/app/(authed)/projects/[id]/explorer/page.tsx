@@ -3,13 +3,24 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Check, Copy, Eye, EyeOff, Play, Plus, Send, Terminal, Trash2 } from 'lucide-react'
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  MoreHorizontal,
+  Play,
+  Plus,
+  Send,
+  Terminal,
+  Trash2,
+} from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field'
-import { FormSelect } from '@/components/ui/dropdown'
+import { Dropdown, DropdownItem, FormSelect } from '@/components/ui/dropdown'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { apiKeysClient, type ApiKeyShape } from '@/lib/api-keys-client'
@@ -48,17 +59,19 @@ function presetLabel(method: HttpMethod, prefix: ApiPrefix, path: string): strin
 }
 
 const PRESET_DEFS: Array<{
+  title: string
   method: HttpMethod
   path: string
   prefix: ApiPrefix
   body?: string
 }> = [
-  { method: 'GET', path: '/clients', prefix: 'v1' },
-  { method: 'GET', path: '/invoices', prefix: 'v1' },
-  { method: 'GET', path: '/products', prefix: 'v1' },
-  { method: 'GET', path: '/expenses', prefix: 'v1' },
-  { method: 'GET', path: '/quotes', prefix: 'v1' },
+  { title: 'Voir mes clients', method: 'GET', path: '/clients', prefix: 'v1' },
+  { title: 'Voir mes factures', method: 'GET', path: '/invoices', prefix: 'v1' },
+  { title: 'Voir mes produits', method: 'GET', path: '/products', prefix: 'v1' },
+  { title: 'Voir mes dépenses', method: 'GET', path: '/expenses', prefix: 'v1' },
+  { title: 'Voir mes devis', method: 'GET', path: '/quotes', prefix: 'v1' },
   {
+    title: 'Créer un client',
     method: 'POST',
     path: '/clients',
     prefix: 'v1',
@@ -72,9 +85,9 @@ const PRESET_DEFS: Array<{
       2
     ),
   },
-  { method: 'GET', path: '/ping', prefix: 'platform' },
-  { method: 'GET', path: '/session', prefix: 'platform' },
-  { method: 'GET', path: '/usage', prefix: 'platform' },
+  { title: 'Tester la connexion', method: 'GET', path: '/ping', prefix: 'platform' },
+  { title: 'Voir ma session', method: 'GET', path: '/session', prefix: 'platform' },
+  { title: 'Voir mon usage', method: 'GET', path: '/usage', prefix: 'platform' },
 ]
 
 const PRESETS = PRESET_DEFS.map((p) => ({
@@ -251,7 +264,7 @@ export default function ExplorerPage() {
   const [response, setResponse] = useState<ResponseShape | null>(null)
   const [responseTab, setResponseTab] = useState<ResponseTab>('pretty')
   const [copied, setCopied] = useState<string | null>(null)
-  const [reqTab, setReqTab] = useState<'auth' | 'params' | 'headers' | 'body'>('auth')
+  const [reqTab, setReqTab] = useState<'examples' | 'params' | 'headers' | 'body'>('examples')
 
   useEffect(() => {
     apiKeysClient.list().then((res) => {
@@ -463,6 +476,58 @@ export default function ExplorerPage() {
       <Card className="border-border/50">
         <CardContent className="p-0">
           <div className="space-y-3 border-b border-border/50 p-4">
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-foreground">Colle ta clé</p>
+              <FormSelect
+                value={selectedKeyId}
+                onChange={setSelectedKeyId}
+                placeholder="Choisir une clé du projet"
+                options={[
+                  { value: '', label: 'Saisie libre' },
+                  ...(keys?.map((k) => ({
+                    value: k.id,
+                    label: `${k.name} · ${k.masked_token}`,
+                  })) ?? []),
+                ]}
+              />
+              <div className="relative mt-2">
+                <Input
+                  type={showToken ? 'text' : 'password'}
+                  value={tokenPlaintext}
+                  onChange={(e) => setTokenPlaintext(e.target.value)}
+                  placeholder="fk_live_…"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="pr-10 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Afficher la clé"
+                >
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-0.5 rounded-lg bg-surface p-0.5">
+              {(['v1', 'platform'] as ApiPrefix[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPrefix(p)}
+                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-xs transition-colors ${
+                    prefix === p
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {p === 'v1' ? API_PREFIX_V1 : API_PREFIX_PLATFORM}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-2">
               <FormSelect
                 value={method}
@@ -491,31 +556,8 @@ export default function ExplorerPage() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-0.5 rounded-lg bg-surface p-0.5">
-              {(['v1', 'platform'] as ApiPrefix[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPrefix(p)}
-                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-xs transition-colors ${
-                    prefix === p
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {p === 'v1' ? API_PREFIX_V1 : API_PREFIX_PLATFORM}
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-lg border border-border/50 bg-surface px-3 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                URL complète
-              </p>
-              <p className="mt-1 break-all font-mono text-xs text-foreground">{fullUrl}</p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-surface px-3 py-2">
+              <p className="min-w-0 flex-1 break-all font-mono text-xs text-foreground">{fullUrl}</p>
               <Button variant="outline" size="sm" onClick={() => copyText(fullUrl, 'URL')}>
                 {copied === 'URL' ? (
                   <>
@@ -525,49 +567,35 @@ export default function ExplorerPage() {
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5 mr-1.5" />
-                    Copier l&apos;URL
+                    Copier
                   </>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => copyText(buildCurl(), 'cURL')}>
-                {copied === 'cURL' ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1.5" />
-                    Commande copiée
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 mr-1.5" />
-                    Copier en cURL
-                  </>
-                )}
-              </Button>
+              <Dropdown
+                align="right"
+                position="below"
+                trigger={
+                  <Button variant="outline" size="sm" aria-label="Plus d’options de copie">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                }
+              >
+                <DropdownItem onClick={() => copyText(fullUrl, 'URL')}>
+                  <Copy className="h-4 w-4" />
+                  Copier l&apos;URL
+                </DropdownItem>
+                <DropdownItem onClick={() => copyText(buildCurl(), 'cURL')}>
+                  <Terminal className="h-4 w-4" />
+                  Copier la commande cURL
+                </DropdownItem>
+              </Dropdown>
             </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => applyPreset(p)}
-                  className="rounded-md border border-border/50 px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-accent/40 hover:bg-surface-hover hover:text-foreground"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-[11px] text-muted-foreground">
-              {prefix === 'v1'
-                ? 'Endpoints métier : clients, invoices, products, expenses, quotes, …'
-                : 'Méta : ping, session, usage (gratuits, ne décomptent pas de crédit)'}
-            </p>
           </div>
 
           <div className="flex items-center gap-1 border-b border-border/40 px-3">
             {(
               [
-                { id: 'auth', label: 'Authentification' },
+                { id: 'examples', label: 'Exemples' },
                 { id: 'params', label: 'Paramètres' },
                 {
                   id: 'headers',
@@ -577,7 +605,7 @@ export default function ExplorerPage() {
                       : ''
                   }`,
                 },
-                ...(hasBody ? [{ id: 'body' as const, label: 'Corps' }] : []),
+                ...(hasBody ? [{ id: 'body' as const, label: 'Données' }] : []),
               ] as Array<{ id: typeof reqTab; label: string }>
             ).map((t) => (
               <button
@@ -596,46 +624,27 @@ export default function ExplorerPage() {
           </div>
 
           <div className="p-4">
-            {reqTab === 'auth' && (
-              <div className="space-y-4">
-                <Field>
-                  <FieldLabel>Clé d&apos;authentification</FieldLabel>
-                  <FormSelect
-                    value={selectedKeyId}
-                    onChange={setSelectedKeyId}
-                    placeholder="Aucune (saisie libre)"
-                    options={[
-                      { value: '', label: 'Aucune (saisie libre)' },
-                      ...(keys?.map((k) => ({
-                        value: k.id,
-                        label: `${k.name} · ${k.masked_token}`,
-                      })) ?? []),
-                    ]}
-                  />
-                  <div className="relative mt-2">
-                    <Input
-                      type={showToken ? 'text' : 'password'}
-                      value={tokenPlaintext}
-                      onChange={(e) => setTokenPlaintext(e.target.value)}
-                      placeholder="fk_live_…"
-                      autoComplete="off"
-                      spellCheck={false}
-                      className="pr-10 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowToken((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label="Toggle visibility"
-                    >
-                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+            {reqTab === 'examples' && (
+              <div className="space-y-2">
+                <p className="px-1 text-xs text-muted-foreground">
+                  Clique sur un exemple pour pré-remplir la requête, puis « Envoyer ».
+                </p>
+                {PRESETS.map((p) => (
+                  <div
+                    key={p.label}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{p.title}</p>
+                      <p className="truncate font-mono text-[11px] text-muted-foreground">
+                        {p.label}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => applyPreset(p)}>
+                      Essayer
+                    </Button>
                   </div>
-                  <FieldDescription>
-                    La requête passe par un proxy serveur : ta clé ne quitte jamais le navigateur
-                    en cross-origin. Colle celle récupérée à la création (ou réinitialise la clé).
-                  </FieldDescription>
-                </Field>
+                ))}
               </div>
             )}
 
