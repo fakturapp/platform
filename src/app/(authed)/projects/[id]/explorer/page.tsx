@@ -46,18 +46,6 @@ const PREFIX_PATHS: Record<ApiPrefix, string> = {
 const METHODS = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'] as const
 type HttpMethod = (typeof METHODS)[number]
 
-// Labels derive their displayed prefix from the configured env vars so the
-// presets stay in sync with whatever path the backend is serving (no stale
-// "/v1/clients" label when the prefix has moved to /api/v2/, etc.).
-const PREFIX_LABELS: Record<ApiPrefix, string> = {
-  v1: API_PREFIX_V1.replace(/^\/api/, '') || '/v1',
-  platform: API_PREFIX_PLATFORM.replace(/^\/api/, '') || '/platform',
-}
-
-function presetLabel(method: HttpMethod, prefix: ApiPrefix, path: string): string {
-  return `${method} ${PREFIX_LABELS[prefix]}${path}`
-}
-
 const PRESET_DEFS: Array<{
   title: string
   method: HttpMethod
@@ -92,7 +80,7 @@ const PRESET_DEFS: Array<{
 
 const PRESETS = PRESET_DEFS.map((p) => ({
   ...p,
-  label: presetLabel(p.method, p.prefix, p.path),
+  label: `${p.method} ${PREFIX_PATHS[p.prefix]}${p.path}`,
 }))
 
 interface HeaderRow {
@@ -253,18 +241,18 @@ export default function ExplorerPage() {
   const [showToken, setShowToken] = useState(false)
 
   const [method, setMethod] = useState<HttpMethod>('GET')
-  const [prefix, setPrefix] = useState<ApiPrefix>('v1')
-  const [path, setPath] = useState('/clients')
+  const [path, setPath] = useState('/v1/clients')
   const [query, setQuery] = useState('')
   const [headers, setHeaders] = useState<HeaderRow[]>([newRow()])
   const [body, setBody] = useState('')
   const [bodyError, setBodyError] = useState<string | null>(null)
+  const [appliedExample, setAppliedExample] = useState<string | null>(null)
 
   const [sending, setSending] = useState(false)
   const [response, setResponse] = useState<ResponseShape | null>(null)
   const [responseTab, setResponseTab] = useState<ResponseTab>('pretty')
   const [copied, setCopied] = useState<string | null>(null)
-  const [reqTab, setReqTab] = useState<'examples' | 'params' | 'headers' | 'body'>('examples')
+  const [reqTab, setReqTab] = useState<'home' | 'examples' | 'headers' | 'body' | 'params'>('home')
 
   useEffect(() => {
     apiKeysClient.list().then((res) => {
@@ -279,19 +267,18 @@ export default function ExplorerPage() {
   const fullUrl = useMemo(() => {
     const p = path.startsWith('/') ? path : `/${path}`
     const qs = query.trim()
-    const base = `${API_HOST_BASE}${PREFIX_PATHS[prefix]}`
-    return `${base}${p}${qs ? (qs.startsWith('?') ? qs : `?${qs}`) : ''}`
-  }, [prefix, path, query])
+    return `${API_HOST_BASE}${p}${qs ? (qs.startsWith('?') ? qs : `?${qs}`) : ''}`
+  }, [path, query])
 
   const hasBody = method !== 'GET' && method !== 'DELETE'
 
   function applyPreset(p: (typeof PRESETS)[number]) {
     setMethod(p.method)
-    setPrefix(p.prefix)
-    setPath(p.path)
+    setPath(`${PREFIX_PATHS[p.prefix]}${p.path}`)
     setBody(p.body ?? '')
     setQuery('')
     setResponse(null)
+    setAppliedExample(p.label)
   }
 
   function addHeader() {
@@ -474,129 +461,12 @@ export default function ExplorerPage() {
       >
       <div className="grid gap-6 lg:grid-cols-2">
       <Card className="border-border/50">
-        <CardContent className="p-0">
-          <div className="space-y-3 border-b border-border/50 p-4">
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-foreground">Colle ta clé</p>
-              <FormSelect
-                value={selectedKeyId}
-                onChange={setSelectedKeyId}
-                placeholder="Choisir une clé du projet"
-                options={[
-                  { value: '', label: 'Saisie libre' },
-                  ...(keys?.map((k) => ({
-                    value: k.id,
-                    label: `${k.name} · ${k.masked_token}`,
-                  })) ?? []),
-                ]}
-              />
-              <div className="relative mt-2">
-                <Input
-                  type={showToken ? 'text' : 'password'}
-                  value={tokenPlaintext}
-                  onChange={(e) => setTokenPlaintext(e.target.value)}
-                  placeholder="fk_live_…"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="pr-10 font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowToken((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label="Afficher la clé"
-                >
-                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-0.5 rounded-lg bg-surface p-0.5">
-              {(['v1', 'platform'] as ApiPrefix[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPrefix(p)}
-                  className={`flex-1 rounded-md px-2 py-1.5 font-mono text-xs transition-colors ${
-                    prefix === p
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {p === 'v1' ? API_PREFIX_V1 : API_PREFIX_PLATFORM}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-2">
-              <FormSelect
-                value={method}
-                onChange={(v) => setMethod(v as HttpMethod)}
-                options={METHODS.map((m) => ({ value: m, label: m }))}
-                className="font-mono font-semibold"
-              />
-              <Input
-                value={path}
-                onChange={(e) => setPath(e.target.value)}
-                placeholder="/clients"
-                className="font-mono"
-              />
-              <Button onClick={handleSend} disabled={sending}>
-                {sending ? (
-                  <>
-                    <Spinner />
-                    Envoi...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Envoyer
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-surface px-3 py-2">
-              <p className="min-w-0 flex-1 break-all font-mono text-xs text-foreground">{fullUrl}</p>
-              <Button variant="outline" size="sm" onClick={() => copyText(fullUrl, 'URL')}>
-                {copied === 'URL' ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1.5" />
-                    Copié
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 mr-1.5" />
-                    Copier
-                  </>
-                )}
-              </Button>
-              <Dropdown
-                align="right"
-                position="below"
-                trigger={
-                  <Button variant="outline" size="sm" aria-label="Plus d’options de copie">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                }
-              >
-                <DropdownItem onClick={() => copyText(fullUrl, 'URL')}>
-                  <Copy className="h-4 w-4" />
-                  Copier l&apos;URL
-                </DropdownItem>
-                <DropdownItem onClick={() => copyText(buildCurl(), 'cURL')}>
-                  <Terminal className="h-4 w-4" />
-                  Copier la commande cURL
-                </DropdownItem>
-              </Dropdown>
-            </div>
-          </div>
-
+        <CardContent className="flex flex-col p-0">
           <div className="flex items-center gap-1 border-b border-border/40 px-3">
             {(
               [
+                { id: 'home', label: 'Accueil' },
                 { id: 'examples', label: 'Exemples' },
-                { id: 'params', label: 'Paramètres' },
                 {
                   id: 'headers',
                   label: `En-têtes${
@@ -606,6 +476,7 @@ export default function ExplorerPage() {
                   }`,
                 },
                 ...(hasBody ? [{ id: 'body' as const, label: 'Données' }] : []),
+                { id: 'params', label: 'Paramètres' },
               ] as Array<{ id: typeof reqTab; label: string }>
             ).map((t) => (
               <button
@@ -623,16 +494,76 @@ export default function ExplorerPage() {
             ))}
           </div>
 
-          <div className="p-4">
+          <div className="flex-1 p-4">
+            {reqTab === 'home' && (
+              <div className="space-y-5">
+                <div>
+                  <p className="mb-1.5 text-sm font-medium text-foreground">Je colle ma clé</p>
+                  <FormSelect
+                    value={selectedKeyId}
+                    onChange={setSelectedKeyId}
+                    placeholder="Choisir une clé du projet"
+                    options={[
+                      { value: '', label: 'Saisie libre' },
+                      ...(keys?.map((k) => ({
+                        value: k.id,
+                        label: `${k.name} · ${k.masked_token}`,
+                      })) ?? []),
+                    ]}
+                  />
+                  <div className="mt-2 flex items-stretch overflow-hidden rounded-lg border border-border/50 bg-field focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/30">
+                    <span className="flex select-none items-center border-r border-border/50 bg-surface px-2.5 font-mono text-xs text-muted-foreground">
+                      fk_live_
+                    </span>
+                    <input
+                      type={showToken ? 'text' : 'password'}
+                      value={tokenPlaintext.replace(/^fk_live_/, '')}
+                      onChange={(e) => {
+                        const suffix = e.target.value.replace(/^fk_live_/, '')
+                        setTokenPlaintext(suffix ? `fk_live_${suffix}` : '')
+                      }}
+                      placeholder="colle ta clé ici"
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="min-w-0 flex-1 bg-transparent px-2.5 py-2 font-mono text-sm text-foreground focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowToken((v) => !v)}
+                      className="px-2.5 text-muted-foreground hover:text-foreground"
+                      aria-label="Afficher la clé"
+                    >
+                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <FieldDescription>Colle la clé récupérée à la création de la clé.</FieldDescription>
+                </div>
+
+                <div>
+                  <p className="mb-1.5 text-sm font-medium text-foreground">URL de base</p>
+                  <div className="rounded-lg border border-border/50 bg-surface px-3 py-2">
+                    <p className="break-all font-mono text-xs text-foreground">{API_HOST_BASE}</p>
+                  </div>
+                  <FieldDescription>
+                    Le chemin (ex. <code>/v1/clients</code>) se complète dans la barre en bas.
+                  </FieldDescription>
+                </div>
+              </div>
+            )}
+
             {reqTab === 'examples' && (
               <div className="space-y-2">
                 <p className="px-1 text-xs text-muted-foreground">
-                  Clique sur un exemple pour pré-remplir la requête, puis « Envoyer ».
+                  Clique sur « Essayer » pour pré-remplir la requête, puis « Envoyer ».
                 </p>
                 {PRESETS.map((p) => (
                   <div
                     key={p.label}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2"
+                    className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+                      appliedExample === p.label
+                        ? 'border-accent/50 bg-accent/5'
+                        : 'border-border/50'
+                    }`}
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">{p.title}</p>
@@ -641,7 +572,14 @@ export default function ExplorerPage() {
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => applyPreset(p)}>
-                      Essayer
+                      {appliedExample === p.label ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 mr-1.5" />
+                          Chargé
+                        </>
+                      ) : (
+                        'Essayer'
+                      )}
                     </Button>
                   </div>
                 ))}
@@ -734,6 +672,63 @@ export default function ExplorerPage() {
                 {bodyError && <p className="mt-1 text-xs text-danger">{bodyError}</p>}
               </div>
             )}
+          </div>
+
+          <div className="space-y-2 border-t border-border/50 p-4">
+            <div className="flex items-center gap-2">
+              <FormSelect
+                value={method}
+                onChange={(v) => {
+                  setMethod(v as HttpMethod)
+                  setAppliedExample(null)
+                }}
+                options={METHODS.map((m) => ({ value: m, label: m }))}
+                className="w-24 font-mono font-semibold"
+              />
+              <Input
+                value={path}
+                onChange={(e) => {
+                  setPath(e.target.value)
+                  setAppliedExample(null)
+                }}
+                placeholder="/v1/clients"
+                className="min-w-0 flex-1 font-mono"
+              />
+              <Button variant="outline" size="sm" onClick={() => copyText(fullUrl, 'URL')}>
+                {copied === 'URL' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+              <Dropdown
+                align="right"
+                position="above"
+                trigger={
+                  <Button variant="outline" size="sm" aria-label="Plus d’options de copie">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                }
+              >
+                <DropdownItem onClick={() => copyText(fullUrl, 'URL')}>
+                  <Copy className="h-4 w-4" />
+                  Copier l&apos;URL
+                </DropdownItem>
+                <DropdownItem onClick={() => copyText(buildCurl(), 'cURL')}>
+                  <Terminal className="h-4 w-4" />
+                  Copier la commande cURL
+                </DropdownItem>
+              </Dropdown>
+            </div>
+            <Button className="w-full" onClick={handleSend} disabled={sending}>
+              {sending ? (
+                <>
+                  <Spinner />
+                  Envoi...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Envoyer
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
