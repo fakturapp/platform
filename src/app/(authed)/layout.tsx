@@ -6,7 +6,8 @@ import { useAuth } from '@/lib/auth'
 import { Agentation } from "agentation";
 import { ProjectsProvider } from '@/lib/projects-context'
 import { Sidebar } from '@/components/layout/sidebar'
-import { DashboardGradient } from '@/components/layout/dashboard-gradient'
+import { ThemedBackground } from '@/components/layout/themed-background'
+import { UiThemeSync } from '@/components/layout/ui-theme-sync'
 import { BillingBanners } from '@/components/billing/billing-banners'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -31,7 +32,8 @@ export default function AuthedLayout({ children }: { children: ReactNode }) {
   return (
     <ProjectsProvider>
       <div className="relative h-screen overflow-hidden bg-background">
-        <DashboardGradient />
+        <UiThemeSync />
+        <ThemedBackground />
         <Sidebar />
         <div className="relative z-10 flex h-screen flex-col overflow-hidden pl-(--sidebar-width)">
           <BillingBanners />
