@@ -3,6 +3,7 @@ import Script from 'next/script'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
 import { ThemeProvider } from '@/lib/theme'
+import { LiquidGlassDefs } from '@/components/layout/liquid-glass-defs'
 import { PLATFORM_URL } from '@/lib/oauth-config'
 import { ToastProvider } from '@/components/ui/toast'
 
@@ -32,6 +33,7 @@ export default function RootLayout({
         className="flex min-h-full flex-col bg-background text-foreground"
         suppressHydrationWarning
       >
+        <LiquidGlassDefs />
         <ThemeProvider>
           <AuthProvider>
             <div className="flex min-h-full flex-1 flex-col">{children}</div>
