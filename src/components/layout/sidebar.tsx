@@ -109,7 +109,7 @@ export function Sidebar() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-(--sidebar-width) flex-col overflow-hidden rounded-r-[2rem] border-r border-sidebar-border bg-sidebar shadow-2xl">
+    <aside className="app-surface fixed left-0 top-0 z-40 flex h-screen w-(--sidebar-width) flex-col overflow-hidden rounded-r-[2rem] border-r border-sidebar-border bg-sidebar shadow-2xl">
       {children}
     </aside>
   )
