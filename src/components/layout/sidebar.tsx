@@ -156,14 +156,14 @@ function NavLink({
       className={cn(
         'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm transition-colors',
         active
-          ? 'text-sidebar-accent-foreground'
-          : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'
+          ? 'text-accent'
+          : 'text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground'
       )}
     >
       {active && (
         <motion.span
           layoutId={`sidebar-active-${groupId}`}
-          className="absolute inset-0 -z-0 rounded-lg bg-sidebar-accent shadow-sm"
+          className="absolute inset-0 -z-0 rounded-lg bg-accent/15 ring-1 ring-inset ring-accent/20"
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         />
       )}
@@ -179,7 +179,7 @@ function BackLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-sidebar-accent"
+      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/[0.06]"
     >
       <ArrowLeft className="h-4 w-4" />
       {label}
@@ -278,7 +278,7 @@ function ProjectSidebarBody({
         )}
         <Link
           href="/projects"
-          className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="flex-1">Changer de projet</span>
@@ -371,7 +371,7 @@ function ResourcesSection() {
           href={DOCS_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
+          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
         >
           <Book className="h-4 w-4" />
           <span className="flex-1 font-medium">Documentation</span>
@@ -381,7 +381,7 @@ function ResourcesSection() {
           href={DASHBOARD_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground"
+          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
         >
           <ExternalLink className="h-4 w-4" />
           <span className="flex-1 font-medium">App Faktur</span>
@@ -421,7 +421,7 @@ function UserFooter() {
         alignOffset={8}
         className="min-w-[260px]"
         trigger={
-          <div className="flex w-full items-center justify-start gap-2.5 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-muted/40 dark:hover:bg-white/[0.04]">
+          <div className="flex w-full items-center justify-start gap-2.5 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-foreground/[0.06]">
             <Avatar
               src={user.avatarUrl ?? undefined}
               alt={user.fullName ?? user.email}
