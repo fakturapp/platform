@@ -163,7 +163,7 @@ function NavLink({
       {active && (
         <motion.span
           layoutId={`sidebar-active-${groupId}`}
-          className="absolute inset-0 -z-0 rounded-lg bg-accent/15 ring-1 ring-inset ring-accent/20"
+          className="absolute inset-0 -z-0 rounded-lg bg-accent/10"
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         />
       )}
