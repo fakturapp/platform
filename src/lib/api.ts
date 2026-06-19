@@ -6,6 +6,51 @@ function resolveApiUrl(endpoint: string) {
   return `${API_BASE_URL}${path}`
 }
 
+export type ConnectionStatus = 'online' | 'connecting' | 'offline'
+
+let connectionListeners: ((status: ConnectionStatus) => void)[] = []
+export function onConnectionStatus(cb: (status: ConnectionStatus) => void) {
+  connectionListeners.push(cb)
+  return () => {
+    connectionListeners = connectionListeners.filter((l) => l !== cb)
+  }
+}
+function emitConnectionStatus(status: ConnectionStatus) {
+  connectionListeners.forEach((cb) => {
+    try {
+      cb(status)
+    } catch {
+      /* ignore */
+    }
+  })
+}
+
+const MAX_CONNECT_RETRIES = 4
+const CONNECT_RETRY_DELAY_MS = 2500
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchWithRetry(input: string, init: RequestInit): Promise<Response> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= MAX_CONNECT_RETRIES; attempt++) {
+    try {
+      const res = await fetch(input, init)
+      emitConnectionStatus('online')
+      return res
+    } catch (err) {
+      lastError = err
+      if (attempt < MAX_CONNECT_RETRIES) {
+        emitConnectionStatus('connecting')
+        await wait(CONNECT_RETRY_DELAY_MS)
+      }
+    }
+  }
+  emitConnectionStatus('offline')
+  throw lastError
+}
+
 let unauthorizedListeners: Array<() => void> = []
 
 export function onUnauthorized(cb: () => void) {
@@ -67,7 +112,7 @@ async function request<T = unknown>(
   }
 
   try {
-    const res = await fetch(resolveApiUrl(endpoint), { ...options, headers })
+    const res = await fetchWithRetry(resolveApiUrl(endpoint), { ...options, headers })
 
     if (res.status === 401) {
       const data = await res.json().catch(() => ({}))

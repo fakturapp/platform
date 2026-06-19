@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/lib/theme'
 import { LiquidGlassDefs } from '@/components/layout/liquid-glass-defs'
 import { PLATFORM_URL } from '@/lib/oauth-config'
 import { ToastProvider } from '@/components/ui/toast'
+import { ConnectionStatus } from '@/components/connection-status'
 
 export const metadata: Metadata = {
   title: 'Faktur Developer Platform',
@@ -38,6 +39,7 @@ export default function RootLayout({
           <AuthProvider>
             <div className="flex min-h-full flex-1 flex-col">{children}</div>
             <ToastProvider placement="top" />
+            <ConnectionStatus />
           </AuthProvider>
         </ThemeProvider>
       </body>
